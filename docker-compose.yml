@@ -11,7 +11,7 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    restart: unless-stopped
+    restart: always
 
   backend:
     build:
@@ -23,17 +23,15 @@ services:
       - db
     ports:
       - "4000:4000"
-    restart: unless-stopped
+    restart: always
 
   frontend:
-    build:
-      context: ./frontend
+    build: ./frontend
     container_name: kanban_frontend
-    depends_on:
-      - backend
+    restart: always
     ports:
-      - "5173:5173"
-    restart: unless-stopped
+      - "80:80"   # внутри контейнера теперь nginx
+
 
 volumes:
   db_data:
