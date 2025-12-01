@@ -1,0 +1,9 @@
+### Создать карточку
+POST http://localhost:4000/api/cards
+Content-Type: application/json
+
+{
+  "columnId": 1,
+  "title": "Первая задача",
+  "description": "писание задач"
+}
