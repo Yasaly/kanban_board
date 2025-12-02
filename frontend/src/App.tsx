@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-const API_BASE =
-    (import.meta as any).env?.VITE_API_BASE_URL || "";
+const API_BASE = "/api";
 
 const WS_URL =
     (import.meta as any).env?.VITE_WS_URL ||
@@ -62,25 +61,29 @@ type EditCardForm = {
 
 type LoginFormProps = {
     onLogin: (email: string, password: string) => Promise<void>;
+    onRegister: (email: string, password: string) => Promise<void>;
 };
 
-function LoginForm({ onLogin }: LoginFormProps) {
+function LoginForm({ onLogin, onRegister }: LoginFormProps) {
     const [email, setEmail] = useState("admin@example.com");
     const [password, setPassword] = useState("admin123");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [mode, setMode] = useState<"login" | "register">("login");
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
         setLoading(true);
         try {
-            await onLogin(email, password);
+            if (mode === "login") {
+                await onLogin(email, password);
+            } else {
+                await onRegister(email, password);
+            }
         } catch (err) {
             const msg =
-                err instanceof Error
-                    ? err.message
-                    : "Ошибка входа. Попробуйте ещё раз.";
+                err instanceof Error ? err.message : "Ошибка. Попробуйте ещё раз.";
             setError(msg);
         } finally {
             setLoading(false);
@@ -89,8 +92,14 @@ function LoginForm({ onLogin }: LoginFormProps) {
 
     return (
         <div className="app-root">
-            <h1 className="app-title">Вход в Kanban-доску</h1>
-            <div className="app-subtitle">Введите email и пароль.</div>
+            <h1 className="app-title">
+                {mode === "login" ? "Вход в Kanban-доску" : "Регистрация в Kanban-доске"}
+            </h1>
+            <div className="app-subtitle">
+                {mode === "login"
+                    ? "Введите email и пароль."
+                    : "Создайте новый аккаунт. Пароль не короче 6 символов."}
+            </div>
 
             {error && (
                 <div style={{ marginBottom: 12, color: "#b91c1c", fontSize: 14 }}>
@@ -134,9 +143,61 @@ function LoginForm({ onLogin }: LoginFormProps) {
                     }}
                     disabled={loading}
                 >
-                    {loading ? "Вход..." : "Войти"}
+                    {loading
+                        ? mode === "login"
+                            ? "Вход..."
+                            : "Регистрация..."
+                        : mode === "login"
+                            ? "Войти"
+                            : "Зарегистрироваться"}
                 </button>
             </form>
+
+            <div style={{ marginTop: 12, fontSize: 14 }}>
+                {mode === "login" ? (
+                    <>
+                        Нет аккаунта?{" "}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setMode("register");
+                                setError(null);
+                            }}
+                            style={{
+                                border: "none",
+                                background: "transparent",
+                                padding: 0,
+                                color: "#2563eb",
+                                cursor: "pointer",
+                                textDecoration: "underline",
+                            }}
+                        >
+                            Зарегистрироваться
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        Уже есть аккаунт?{" "}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setMode("login");
+                                setError(null);
+                            }}
+                            style={{
+                                border: "none",
+                                background: "transparent",
+                                padding: 0,
+                                color: "#2563eb",
+                                cursor: "pointer",
+                                textDecoration: "underline",
+                            }}
+                        >
+                            Войти
+                        </button>
+                    </>
+                )}
+            </div>
         </div>
     );
 }
@@ -192,30 +253,49 @@ function App() {
     }
 
     async function handleLogin(email: string, password: string) {
-        console.log("handleLogin: sending request", { email, password });
-
-        const res = await fetch(`${API_BASE}/api/auth/login`, {
+        const res = await fetch(`${API_BASE}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
         });
 
-        console.log("handleLogin: response status", res.status);
-
         if (!res.ok) {
             let message = "Ошибка входа";
             try {
                 const data = await res.json();
-                console.log("handleLogin: error body", data);
                 if (data?.error) message = data.error;
-            } catch (e) {
-                console.log("handleLogin: failed to parse error JSON", e);
-            }
+            } catch {}
             throw new Error(message);
         }
 
         const data = await res.json();
-        console.log("handleLogin: success body", data);
+
+        const newAuth: AuthState = {
+            token: data.token,
+            user: data.user,
+        };
+
+        setAuth(newAuth);
+        localStorage.setItem("auth", JSON.stringify(newAuth));
+    }
+
+    async function handleRegister(email: string, password: string) {
+        const res = await fetch(`${API_BASE}/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+        });
+
+        if (!res.ok) {
+            let message = "Ошибка регистрации";
+            try {
+                const data = await res.json();
+                if (data?.error) message = data.error;
+            } catch {}
+            throw new Error(message);
+        }
+
+        const data = await res.json();
 
         const newAuth: AuthState = {
             token: data.token,
@@ -241,7 +321,12 @@ function App() {
     async function loadBoard() {
         try {
             setError(null);
-            const res = await apiFetch("/api/board");
+            const res = await apiFetch("/board");
+            if (!res.ok) {
+                const text = await res.text();
+                console.error("Load board failed:", res.status, text);
+                throw new Error("Failed");
+            }
             const data = (await res.json()) as BoardResponse;
             setBoard(data);
         } catch (e) {
@@ -265,9 +350,7 @@ function App() {
                 if (data?.type === "board_changed") {
                     loadBoard();
                 }
-            } catch {
-                /* ignore */
-            }
+            } catch {}
         };
 
         ws.onclose = () => {
@@ -329,7 +412,7 @@ function App() {
         updateForm(columnId, { loading: true });
 
         try {
-            const res = await apiFetch("/api/cards", {
+            const res = await apiFetch("/cards", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -362,7 +445,7 @@ function App() {
         if (!ok) return;
 
         try {
-            const res = await apiFetch(`/api/cards/${cardId}`, {
+            const res = await apiFetch(`/cards/${cardId}`, {
                 method: "DELETE",
             });
 
@@ -404,7 +487,7 @@ function App() {
         setEditForm((prev) => ({ ...prev, loading: true }));
 
         try {
-            const res = await apiFetch(`/api/cards/${cardId}`, {
+            const res = await apiFetch(`/cards/${cardId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -417,9 +500,7 @@ function App() {
             });
 
             if (res.status === 403) {
-                setError(
-                    "Вы можете редактировать только свои задачи (или вы не админ)."
-                );
+                setError("Вы можете редактировать только свои задачи (или вы не админ).");
                 setEditForm((prev) => ({ ...prev, loading: false }));
                 return;
             }
@@ -477,7 +558,7 @@ function App() {
         setDragOverColumnId(null);
 
         try {
-            const res = await apiFetch(`/api/cards/${card.id}`, {
+            const res = await apiFetch(`/cards/${card.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ columnId }),
@@ -497,7 +578,7 @@ function App() {
     }
 
     if (!auth) {
-        return <LoginForm onLogin={handleLogin} />;
+        return <LoginForm onLogin={handleLogin} onRegister={handleRegister} />;
     }
 
     if (error && !board) {
@@ -561,11 +642,11 @@ function App() {
                     marginBottom: 8,
                 }}
             >
-                <h1 className="app-title">Kanban board</h1>
+                <h1 className="app-title">Kanban доска</h1>
                 <div style={{ fontSize: 14 }}>
           <span>
             {auth.user.email} (
-              {auth.user.role === "admin" ? "admin" : "user"})
+              {auth.user.role === "admin" ? "Админ" : "Пользователь"})
           </span>
                     <button
                         onClick={() => handleLogout()}
@@ -578,7 +659,7 @@ function App() {
                             padding: "4px 8px",
                         }}
                     >
-                        Logout
+                        Выйти
                     </button>
                 </div>
             </div>
