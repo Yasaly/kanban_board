@@ -30,7 +30,9 @@ services:
     container_name: kanban_frontend
     restart: always
     ports:
-      - "80:80"   # внутри контейнера теперь nginx
+      - "80:80"
+    depends_on:
+      - backend
 
 
 volumes:
