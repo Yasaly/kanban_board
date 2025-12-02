@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 const API_BASE =
-    (import.meta as any).env?.VITE_API_BASE_URL || "/api";
+    (import.meta as any).env?.VITE_API_BASE_URL || "";
 
 const WS_URL =
     (import.meta as any).env?.VITE_WS_URL ||
-    `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws`;
+    `${window.location.protocol === "https:" ? "wss" : "ws"}://${
+        window.location.host
+    }/ws`;
 
 type Column = {
     id: number;
@@ -58,7 +60,6 @@ type EditCardForm = {
     loading: boolean;
 };
 
-
 type LoginFormProps = {
     onLogin: (email: string, password: string) => Promise<void>;
 };
@@ -77,7 +78,9 @@ function LoginForm({ onLogin }: LoginFormProps) {
             await onLogin(email, password);
         } catch (err) {
             const msg =
-                err instanceof Error ? err.message : "Ошибка входа. Попробуйте ещё раз.";
+                err instanceof Error
+                    ? err.message
+                    : "Ошибка входа. Попробуйте ещё раз.";
             setError(msg);
         } finally {
             setLoading(false);
@@ -87,9 +90,7 @@ function LoginForm({ onLogin }: LoginFormProps) {
     return (
         <div className="app-root">
             <h1 className="app-title">Вход в Kanban-доску</h1>
-            <div className="app-subtitle">
-                Введите email и пароль.
-            </div>
+            <div className="app-subtitle">Введите email и пароль.</div>
 
             {error && (
                 <div style={{ marginBottom: 12, color: "#b91c1c", fontSize: 14 }}>
@@ -140,10 +141,8 @@ function LoginForm({ onLogin }: LoginFormProps) {
     );
 }
 
-
 function App() {
     const [auth, setAuth] = useState<AuthState | null>(null);
-
     const [board, setBoard] = useState<BoardResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
 
@@ -160,7 +159,6 @@ function App() {
         loading: false,
     });
 
-
     useEffect(() => {
         const stored = localStorage.getItem("auth");
         if (stored) {
@@ -172,7 +170,6 @@ function App() {
             }
         }
     }, []);
-
 
     async function apiFetch(path: string, init: RequestInit = {}) {
         if (!auth) {
@@ -193,7 +190,6 @@ function App() {
 
         return res;
     }
-
 
     async function handleLogin(email: string, password: string) {
         console.log("handleLogin: sending request", { email, password });
@@ -237,7 +233,6 @@ function App() {
         if (clearMessage) setError(null);
     }
 
-
     useEffect(() => {
         if (!auth) return;
         loadBoard();
@@ -271,6 +266,7 @@ function App() {
                     loadBoard();
                 }
             } catch {
+                /* ignore */
             }
         };
 
@@ -286,7 +282,6 @@ function App() {
             ws.close();
         };
     }, [auth]);
-
 
     const cardsByColumn = useMemo(() => {
         const map: Record<number, Card[]> = {};
@@ -360,7 +355,6 @@ function App() {
         }
     }
 
-
     async function handleDeleteCard(cardId: number) {
         if (!auth || !board) return;
 
@@ -388,7 +382,6 @@ function App() {
             setError("Не удалось удалить карточку");
         }
     }
-
 
     function startEditCard(card: Card) {
         setEditingCardId(card.id);
@@ -444,7 +437,6 @@ function App() {
             setEditForm((prev) => ({ ...prev, loading: false }));
         }
     }
-
 
     function handleDragStart(cardId: number) {
         if (editingCardId !== null) return;
@@ -569,10 +561,11 @@ function App() {
                     marginBottom: 8,
                 }}
             >
-                <h1 className="app-title">Kanban доска</h1>
+                <h1 className="app-title">Kanban board</h1>
                 <div style={{ fontSize: 14 }}>
           <span>
-            {auth.user.email} ({auth.user.role === "admin" ? "Админ" : "Пользователь"})
+            {auth.user.email} (
+              {auth.user.role === "admin" ? "admin" : "user"})
           </span>
                     <button
                         onClick={() => handleLogout()}
@@ -585,7 +578,7 @@ function App() {
                             padding: "4px 8px",
                         }}
                     >
-                        Выйти
+                        Logout
                     </button>
                 </div>
             </div>
@@ -605,7 +598,11 @@ function App() {
                 {board.columns.map((column) => {
                     const cards = cardsByColumn[column.id] || [];
                     const form: NewCardForm =
-                        formState[column.id] ?? { title: "", description: "", loading: false };
+                        formState[column.id] ?? {
+                            title: "",
+                            description: "",
+                            loading: false,
+                        };
 
                     const isDragOver = dragOverColumnId === column.id;
                     const isFormOpen = !!openFormColumns[column.id];
@@ -688,7 +685,9 @@ function App() {
                                                             editForm.loading || !editForm.title.trim()
                                                         }
                                                     >
-                                                        {editForm.loading ? "Сохранение..." : "Сохранить"}
+                                                        {editForm.loading
+                                                            ? "Сохранение..."
+                                                            : "Сохранить"}
                                                     </button>
                                                 </div>
                                             </div>
