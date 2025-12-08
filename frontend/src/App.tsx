@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 const API_BASE = "/api";
 
-const WS_URL =
+const WS_URL = /*адресс для веб-сокетов*/
     (import.meta as any).env?.VITE_WS_URL ||
     `${window.location.protocol === "https:" ? "wss" : "ws"}://${
         window.location.host
@@ -51,7 +51,7 @@ type AuthState = {
     user: AuthUser;
 };
 
-type OpenFormState = Record<number, boolean>;
+type OpenFormState = Record<number, boolean>;  /*открыта ли форма добавления задачи для каждой колонки*/
 
 type EditCardForm = {
     title: string;
@@ -72,11 +72,11 @@ function LoginForm({ onLogin, onRegister }: LoginFormProps) {
     const [mode, setMode] = useState<"login" | "register">("login");
 
     async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
+        e.preventDefault(); /*не дает браузеру перезагрузить страницу*/
         setError(null);
-        setLoading(true);
+        setLoading(true); /*отчистка прошлой ошибки*/
         try {
-            if (mode === "login") {
+            if (mode === "login") { /*вход либо регистрация*/
                 await onLogin(email, password);
             } else {
                 await onRegister(email, password);
@@ -86,10 +86,11 @@ function LoginForm({ onLogin, onRegister }: LoginFormProps) {
                 err instanceof Error ? err.message : "Ошибка. Попробуйте ещё раз.";
             setError(msg);
         } finally {
-            setLoading(false);
+            setLoading(false); /*снимаем флаг загрузки*/
         }
     }
 
+    /*регистрация*/
     return (
         <div className="app-root">
             <h1 className="app-title">
@@ -203,31 +204,31 @@ function LoginForm({ onLogin, onRegister }: LoginFormProps) {
 }
 
 function App() {
-    const [auth, setAuth] = useState<AuthState | null>(null);
-    const [board, setBoard] = useState<BoardResponse | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [auth, setAuth] = useState<AuthState | null>(null); /*храним авторизацию*/
+    const [board, setBoard] = useState<BoardResponse | null>(null); /*подгружаем доску*/
+    const [error, setError] = useState<string | null>(null); /*ошибка сверху*/
 
-    const [formState, setFormState] = useState<NewCardFormState>({});
-    const [openFormColumns, setOpenFormColumns] = useState<OpenFormState>({});
+    const [formState, setFormState] = useState<NewCardFormState>({}); /*состояние форм, создание для каждого columnId*/
+    const [openFormColumns, setOpenFormColumns] = useState<OpenFormState>({}); /*открыта ли форма создания в конкретной колонке*/
 
-    const [draggedCardId, setDraggedCardId] = useState<number | null>(null);
-    const [dragOverColumnId, setDragOverColumnId] = useState<number | null>(null);
+    const [draggedCardId, setDraggedCardId] = useState<number | null>(null); /*какую карточку сейчас перемещаем*/
+    const [dragOverColumnId, setDragOverColumnId] = useState<number | null>(null); /*на какой колонке сейчас курсор с этой картой*/
 
-    const [editingCardId, setEditingCardId] = useState<number | null>(null);
-    const [editForm, setEditForm] = useState<EditCardForm>({
+    const [editingCardId, setEditingCardId] = useState<number | null>(null); /*редактирование карточки*/
+    const [editForm, setEditForm] = useState<EditCardForm>({ /*текущее значение полей форм и флаг загрузки*/
         title: "",
         description: "",
         loading: false,
     });
 
-    useEffect(() => {
+    useEffect(() => { /*чтобы при перезагрзуке страницы пользователь оставался в системе, пока токен жив (7дней)*/
         const stored = localStorage.getItem("auth");
-        if (stored) {
+        if (stored) { /*читаем Auth из localstorage*/
             try {
-                const parsed: AuthState = JSON.parse(stored);
-                setAuth(parsed);
+                const parsed: AuthState = JSON.parse(stored); /*парсинг*/
+                setAuth(parsed); /*устанавливаем Auth*/
             } catch {
-                localStorage.removeItem("auth");
+                localStorage.removeItem("auth"); /*удаляем ключ*/
             }
         }
     }, []);
@@ -237,14 +238,14 @@ function App() {
             throw new Error("Not authenticated");
         }
 
-        const headers: HeadersInit = {
+        const headers: HeadersInit = { /*добавляем заголовок с токеном*/
             ...(init.headers || {}),
             Authorization: `Bearer ${auth.token}`,
         };
 
         const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
 
-        if (res.status === 401) {
+        if (res.status === 401) { /*если не смогли достучаться до бека*/
             handleLogout(false);
             throw new Error("Сессия истекла, войдите снова.");
         }
@@ -253,13 +254,13 @@ function App() {
     }
 
     async function handleLogin(email: string, password: string) {
-        const res = await fetch(`${API_BASE}/auth/login`, {
+        const res = await fetch(`${API_BASE}/auth/login`, { /*отправляем пост-запрос*/
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
         });
 
-        if (!res.ok) {
+        if (!res.ok) { /*если ошибка*/
             let message = "Ошибка входа";
             try {
                 const data = await res.json();
@@ -267,6 +268,8 @@ function App() {
             } catch {}
             throw new Error(message);
         }
+
+        /*если успех*/
 
         const data = await res.json();
 
@@ -306,19 +309,19 @@ function App() {
         localStorage.setItem("auth", JSON.stringify(newAuth));
     }
 
-    function handleLogout(clearMessage = true) {
-        setAuth(null);
-        setBoard(null);
-        localStorage.removeItem("auth");
+    function handleLogout(clearMessage = true) { /*полный выход*/
+        setAuth(null);  /*убираем пользователя*/
+        setBoard(null); /*убираем доску*/
+        localStorage.removeItem("auth"); /*записи из локалсторадж*/
         if (clearMessage) setError(null);
     }
 
-    useEffect(() => {
+    useEffect(() => { /*загрузка доски при появлении auth*/
         if (!auth) return;
-        loadBoard();
+        loadBoard(); /*загружаем доску при входе*/
     }, [auth]);
 
-    async function loadBoard() {
+    async function loadBoard() { /*гет-запрос к апи/боард*/
         try {
             setError(null);
             const res = await apiFetch("/board");
@@ -327,6 +330,7 @@ function App() {
                 console.error("Load board failed:", res.status, text);
                 throw new Error("Failed");
             }
+            /*если все хорошо, то парсим джсон и сохраняем доску*/
             const data = (await res.json()) as BoardResponse;
             setBoard(data);
         } catch (e) {
@@ -335,9 +339,10 @@ function App() {
         }
     }
 
-    useEffect(() => {
+    useEffect(() => { /*подключение веб-сокета*/
         if (!auth) return;
 
+        /*если авторизирован*/
         const ws = new WebSocket(WS_URL);
 
         ws.onopen = () => {
@@ -366,7 +371,7 @@ function App() {
         };
     }, [auth]);
 
-    const cardsByColumn = useMemo(() => {
+    const cardsByColumn = useMemo(() => { /*группировка карточек по колонкам; юзмемо, чтобы не пересчитывать доску каждый рендер, если доска не менялась*/
         const map: Record<number, Card[]> = {};
         if (!board) return map;
 
@@ -384,6 +389,7 @@ function App() {
         return map;
     }, [board]);
 
+    /*обновляет часть состояния формы конкретной колонки. Если формы еще не было - создает дефолтную*/
     function updateForm(columnId: number, patch: Partial<NewCardForm>) {
         setFormState((prev) => ({
             ...prev,
@@ -394,6 +400,7 @@ function App() {
         }));
     }
 
+    /*открыть или закрыть форму создания в колонке*/
     function toggleForm(columnId: number, open?: boolean) {
         setOpenFormColumns((prev) => ({
             ...prev,
@@ -401,6 +408,7 @@ function App() {
         }));
     }
 
+    /*берем состояние формы для колонки. Если заголовок пустой - ничего не делаем*/
     async function handleAddCard(columnId: number) {
         if (!auth) return;
 
@@ -409,6 +417,7 @@ function App() {
 
         if (!state.title.trim()) return;
 
+        /*отправляем ПОСТ-запрос с созданием карты*/
         updateForm(columnId, { loading: true });
 
         try {
@@ -438,6 +447,7 @@ function App() {
         }
     }
 
+    /*удаление карточки. Отправляется ДЕЛЕТ-запрос на апи/кардс/:ид*/
     async function handleDeleteCard(cardId: number) {
         if (!auth || !board) return;
 
@@ -449,6 +459,7 @@ function App() {
                 method: "DELETE",
             });
 
+            /*Сработала проверка ролей на беке*/
             if (res.status === 403) {
                 setError("Вы можете удалять только свои задачи (или вы не админ).");
                 return;
@@ -459,6 +470,7 @@ function App() {
                 throw new Error("Failed to delete card");
             }
 
+            /*в случае успеха*/
             await loadBoard();
         } catch (e) {
             console.error(e);
@@ -466,6 +478,7 @@ function App() {
         }
     }
 
+    /*переводи карточку в режим редактирования и подставляем текущие значение*/
     function startEditCard(card: Card) {
         setEditingCardId(card.id);
         setEditForm({
@@ -475,11 +488,13 @@ function App() {
         });
     }
 
+    /*отмена редактирования*/
     function cancelEdit() {
         setEditingCardId(null);
         setEditForm({ title: "", description: "", loading: false });
     }
 
+    /*отправляем петч апи/кардс/:ид*/
     async function handleUpdateCard(cardId: number) {
         if (!auth) return;
         if (!editForm.title.trim()) return;
@@ -510,6 +525,7 @@ function App() {
                 throw new Error("Failed to update card");
             }
 
+            /*в случае успеха*/
             await loadBoard();
             cancelEdit();
         } catch (e) {
@@ -519,11 +535,13 @@ function App() {
         }
     }
 
+    /*не даем перетаскивать, если что-то редактируется*/
     function handleDragStart(cardId: number) {
         if (editingCardId !== null) return;
         setDraggedCardId(cardId);
     }
 
+    /*сбрасываем состояние после перетаскивания*/
     function handleDragEnd() {
         setDraggedCardId(null);
         setDragOverColumnId(null);
@@ -533,10 +551,11 @@ function App() {
         columnId: number,
         evt: React.DragEvent<HTMLDivElement>
     ) {
-        evt.preventDefault();
+        evt.preventDefault();   /*разрешение на дроп; сохраняем, над какой колонкой сейчас курсор*/
         setDragOverColumnId(columnId);
     }
 
+    /*если не нашли карточку, или колонка та же, то сбрасываем и выходим*/
     async function handleDropOnColumn(columnId: number) {
         if (!board || draggedCardId === null || !auth) return;
 
@@ -548,6 +567,7 @@ function App() {
             return;
         }
 
+        /*обновление фронта в случае успеха. Сразу двигаем карточку визуально, не ожиидая ответа сервера*/
         const updatedCard: Card = { ...card, columnId };
         const newCards = board.cards.map((c) =>
             c.id === updatedCard.id ? updatedCard : c
@@ -558,6 +578,7 @@ function App() {
         setDragOverColumnId(null);
 
         try {
+            /*Отправляем на бек петч только с колумнИд*/
             const res = await apiFetch(`/cards/${card.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
@@ -569,6 +590,7 @@ function App() {
                 throw new Error("Failed to move card");
             }
 
+            /*Если не удалось, то двигаем обратно с помощью повтороной загрузки*/
             await loadBoard();
         } catch (e) {
             console.error(e);
@@ -577,12 +599,16 @@ function App() {
         }
     }
 
+    /*Если пользователь не авторизован, то только рендер страницы входа*/
     if (!auth) {
         return <LoginForm onLogin={handleLogin} onRegister={handleRegister} />;
     }
 
+    /*Если есть ошибка, и доска еще не загружена, то показывает ошибку и шапку.*/
+    /*Если ошибки нет, и доска не загружена - показываем текст о загрузке строки*/
     if (error && !board) {
         return (
+            /*Заргузка доски*/
             <div className="app-root">
                 <div
                     style={{

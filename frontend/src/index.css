@@ -6,8 +6,8 @@ body {
     margin: 0;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-    background: #e5f3ff; /* светлый фон */
-    color: #111827;
+    background: #e5f3ff; /*фон*/
+    color: #111827; //текст
 }
 
 #root {
@@ -15,46 +15,46 @@ body {
 }
 
 .app-root {
-    min-height: 100vh;
-    padding: 32px 40px;
+    min-height: 100vh; /*100% высота видимости окна браузера*/
+    padding: 32px 40px; /*внутренние отступы (снизу сверху, слева справа)*/
 }
 
 
-.app-title {
+.app-title { //заголовок
     font-size: 32px;
     font-weight: 700;
-    margin: 0 0 8px;
+    margin: 0 0 8px;  /*убираем верхний отступ + 8 пикселей снизу для подзаголовка*/
 }
 
 .app-subtitle {
     font-size: 14px;
     color: #6b7280;
-    margin-bottom: 24px;
+    margin-bottom: 24px; /*отделение подзаголовка и контента*/
 }
 
 
-.board {
-    display: flex;
-    gap: 24px;
-    align-items: flex-start;
+.board { /*контейнер доски, в котором располагаются все колонки*/
+    display: flex; /*колонки в ряд по горизонтали*/
+    gap: 24px; /*расстояние между колонками*/
+    align-items: flex-start; /*выравниваем по верхнему краю колонки*/
 }
 
 
-.column {
-    flex: 1;
+.column { /*оформление одной колонки доски*/
+    flex: 1; /*колонки одинаковой ширины*/
     background: #f9fafb;
-    border-radius: 16px;
-    padding: 16px 14px 18px;
+    border-radius: 16px; /*скругление углов*/
+    padding: 16px 14px 18px; /*внутренние отступы (сверху, по бокам, снизу)*/
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e5e7eb; /*светлая рамка*/
     min-height: 260px;
 }
 
 .column-header {
-    display: flex;
+    display: flex; /*элементы по горизонтали*/
     align-items: center;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 12px; /*отступ снизу (между шапкой и карточкой)*/
 }
 
 .column-title {
@@ -64,14 +64,14 @@ body {
 
 .column-count {
     font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 999px;
+    padding: 2px 8px; /*внутренние отступы по вертикали, по горизонтали)*/
+    border-radius: 999px; /*скругление*/
     background: #e5efff;
     color: #2563eb;
 }
 
 .column-add-btn {
-    margin-left: auto;
+    margin-left: auto; /*отодвигаем кнопку вправо*/
     width: 24px;
     height: 24px;
     border-radius: 999px;
@@ -80,15 +80,15 @@ body {
     color: white;
     font-size: 18px;
     line-height: 1;
-    cursor: pointer;
-    display: flex;
+    cursor: pointer; /*можно кликнуть*/
+    display: flex;                  /*выравниваем по центру*/
     align-items: center;
     justify-content: center;
 }
 
-.column-add-btn:disabled {
-    opacity: 0.5;
-    cursor: default;
+.column-add-btn:disabled { /*когда кнопка недоступна*/
+    opacity: 0.5; /*прозрачность*/
+    cursor: default; /*недоступна*/
 }
 
 
@@ -125,7 +125,7 @@ body {
 }
 
 .column.drag-over {
-    outline: 2px dashed #2563eb;
+    outline: 2px dashed #2563eb; /*пунктирная синяя рамка*/
 }
 
 
@@ -137,7 +137,7 @@ body {
 }
 
 .add-card-form input,
-.add-card-form textarea {
+.add-card-form textarea { /*поля ввода названия/описания внутри формы добавления карточки*/
     width: 100%;
     border-radius: 6px;
     border: 1px solid #d1d5db;
@@ -149,7 +149,7 @@ body {
 .add-card-actions {
     display: flex;
     gap: 8px;
-    justify-content: flex-end;
+    justify-content: flex-end; /*выравнивание кнопки по правому краю*/
 }
 
 .add-card-form button {

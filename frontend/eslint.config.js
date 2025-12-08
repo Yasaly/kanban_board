@@ -6,9 +6,10 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist']), //результат сборки вайт
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.{ts,tsx}'], /*конфиг для всех файлов фронта данных расширений: базовые правила, глобальные переменные,
+                                    настройки для вайт, правила для тайпскрипт, реакт*/
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
